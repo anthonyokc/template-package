@@ -55,24 +55,45 @@ then {
 fi
 
 oecho "Replacing template references within files"
-grep -rl --exclude=init.sh --exclude=*.shared \
-    --exclude-dir=.git "r.pkg.template" . | \
-    xargs perl -p -i -e "s/r.pkg.template/${pkg}/g"
+files=$(grep -rl --exclude=init.sh --exclude="*.shared" \
+    --exclude-dir=.git "r.pkg.template" . || true)
+if [ -n "$files" ]; then
+    echo "$files" | xargs perl -p -i -e "s/r.pkg.template/${pkg}/g"
+else
+    echo "No template references found in files."
+fi
 perl -p -i -e "s/insightsengineering/${owner}/g" DESCRIPTION
 perl -p -i -e "s/insightsengineering/${owner}/g" .github/ISSUE_TEMPLATE/*.yml
 perl -p -i -e "s/insightsengineering/${owner}/g" _pkgdown.yml
 perl -p -i -e "s/insightsengineering/${owner}/g" staged_dependencies.yaml
-grep -rl --exclude=init.sh --exclude=*.shared \
-    --exclude-dir=.git "REPO_GITHUB_TOKEN" . | \
-    xargs perl -p -i -e 's/REPO_GITHUB_TOKEN/GITHUB_TOKEN/g'
+oecho "REPO_GITHUB_TOKEN"
+tokens=$(grep -rl --exclude=init.sh --exclude="*.shared" \
+    --exclude-dir=.git "REPO_GITHUB_TOKEN" . || true)
+if [ -n "$tokens" ]; then
+    echo "$tokens" | xargs perl -p -i -e 's/REPO_GITHUB_TOKEN/GITHUB_TOKEN/g'
+else
+    echo "No REPO_GITHUB_TOKEN references found in files."
+fi
+oecho "secrets REPO_GITHUB_TOKEN"
 perl -p -i -e 's@secrets.REPO_GITHUB_TOKEN@secrets.GITHUB_TOKEN@g' .github/workflows/*.shared
-grep -rl --exclude=init.sh --exclude=*.shared \
-    --exclude-dir=.git \
-    "68416928+insights-engineering-bot@users.noreply.github.com" .github/workflows/ | \
-    xargs perl -p -i -e 's/68416928\+insights-engineering-bot/41898282\+github-actions\[bot\]/g'
-grep -rl --exclude=init.sh --exclude=*.shared \
-    --exclude-dir=.git "insights-engineering-bot" .github/workflows/ | \
-    xargs perl -p -i -e 's/insights-engineering-bot/github-actions/g'
+oecho "emails"
+emails=$(grep -rl --exclude=init.sh --exclude="*.shared" \
+    --exclude-dir=.git "68416928+insights-engineering-bot@users.noreply.github.com" .github/workflows/ || true)
+echo "WOAH"
+echo "Grep exit status: $?"
+if [ -n "$emails" ]; then
+    echo "$emails" | xargs perl -p -i -e 's/68416928\+insights-engineering-bot/41898282\+github-actions\[bot\]/g'
+else
+    echo "No insights-engineering-bot email references found in workflow files."
+fi
+oecho "usernames"
+usernames=$(grep -rl --exclude=init.sh --exclude="*.shared" \
+    --exclude-dir=.git "insights-engineering-bot" .github/workflows/ || true)
+if [ -n "$usernames" ]; then
+    echo "$usernames" | xargs perl -p -i -e 's/insights-engineering-bot/github-actions/g'
+else
+    echo "No insights-engineering-bot username references found in workflow files."
+fi
 
 oecho "Updating file names and removing unnecessary files"
 mv r.pkg.template.Rproj "${pkg}.Rproj"
